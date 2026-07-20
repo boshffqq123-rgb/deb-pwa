@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>نظام إدارة الديون - بدون إنترنت بالكامل</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <!-- PWA manifest كملف حقيقي منفصل -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c7da0">
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { background: #f0f2f5; margin: 0; padding: 16px; direction: rtl; }
+        .container { max-width: 1300px; margin: auto; }
+        .card { background: white; border-radius: 24px; padding: 20px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        button { background: #2c7da0; color: white; border: none; padding: 10px 20px; border-radius: 30px; cursor: pointer; font-size: 14px; margin: 6px; transition: 0.2s; }
+        button:hover { opacity: 0.9; transform: scale(0.98); }
+        input, select, textarea { padding: 10px 14px; border-radius: 16px; border: 1px solid #ccc; width: 100%; margin-bottom: 12px; font-size: 14px; }
+        .form-row { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 10px; }
+        .form-group { flex: 1; min-width: 160px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; display: block; overflow-x: auto; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background: #2c7da0; color: white; }
+        .summary { background: #e9f5f9; border-radius: 20px; padding: 15px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; font-weight: bold; }
+        .tab-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+        .tab { background: #e0e0e0; padding: 10px 30px; border-radius: 40px; cursor: pointer; font-weight: bold; }
+        .tab.active { background: #2c7da0; color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .install-btn { background: #4caf50; display: inline-block; margin-right: 15px; }
+        @media print {
+            .tab-bar, button:not(.no-print), .install-btn, .no-print { display: none; }
+            body { background: white; padding: 0; margin: 0; }
+            .card { box-shadow: none; padding: 0; margin: 0; }
+            table { border: 1px solid #000; }
+            th, td { border: 1px solid #000; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="icons/icon-192.png" width="50" height="50" style="border-radius: 12px;" alt="شعار النظام">
+            <h1 style="margin:0;">نظام إدارة الديون</h1>
+        </div>
+        <button id="installPwaBtn" class="install-btn" style="display: none;">📲 تثبيت التطبيق</button>
+    </div>
+
+    <div class="tab-bar">
+        <div class="tab active" data-tab="entry">➕ إدخال</div>
+        <div class="tab" data-tab="monthly">📊 تقرير شهري</div>
+        <div class="tab" data-tab="search">🔍 بحث متقدم</div>
+        <div class="tab" data-tab="alerts">⚠️ تنبيهات</div>
+    </div>
+
+    <!-- تبويب الإدخال -->
+    <div id="entry" class="tab-content active">
+        <div class="card">
+            <h3>تسجيل دين جديد</h3>
+            <div class="form-row">
+                <div class="form-group"><label>الاسم *</label><input type="text" id="name" placeholder="أحمد محمد"></div>
+                <div class="form-group"><label>المبلغ *</label><input type="number" id="amount" placeholder="المبلغ"></div>
+                <div class="form-group"><label>المسدد *</label><input type="number" id="paid" placeholder="المدفوع"></div>
+                <div class="form-group"><label>التاريخ *</label><input type="date" id="date"></div>
+                <div class="form-group"><label>ملاحظة</label><textarea id="note" rows="1"></textarea></div>
+            </div>
+            <div><button id="saveBtn">💾 حفظ</button> <button id="cancelBtn">🗑️ إلغاء</button></div>
+            <input type="hidden" id="editId">
+        </div>
+        <div class="summary" id="summaryArea"></div>
+        <div class="card">
+            <input type="text" id="searchInput" placeholder="🔍 بحث بالاسم ...">
+            <div style="overflow-x:auto;"><table id="debtsTable"><thead><tr><th>الاسم</th><th>التاريخ</th><th>المبلغ</th><th>المسدد</th><th>ملاحظة</th><th>إجراءات</th></tr></thead><tbody></tbody></table></div>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
+            <button id="exportAllExcelBtn" style="background:#4caf50;">📎 تصدير كل البيانات Excel</button>
+            <button id="importExcelBtn" style="background:#ff9800;">📂 استيراد من Excel</button>
+        </div>
+    </div>
+
+    <!-- تبويب التقرير الشهري -->
+    <div id="monthly" class="tab-content">
+        <div class="card">
+            <h3>تقرير شهري</h3>
+            <div class="form-row">
+                <div class="form-group"><label>الشهر</label><select id="monthSelect"></select></div>
+                <div class="form-group"><label>السنة</label><select id="yearSelect"></select></div>
+                <div class="form-group"><label>الاسم</label><select id="filterName"><option value="">الكل</option></select></div>
+            </div>
+            <div><button id="refreshMonthlyBtn">🔄 عرض التقرير</button> <button id="printMonthlyBtn">🖨️ طباعة / حفظ PDF</button> <button id="excelMonthlyBtn">📎 تصدير Excel (التقرير)</button></div>
+            <div id="monthlyReportContainer"></div>
+            <div id="monthlyTotal" class="summary"></div>
+        </div>
+    </div>
+
+    <!-- تبويب البحث المتقدم -->
+    <div id="search" class="tab-content">
+        <div class="card">
+            <h3>بحث متقدم بالاسم</h3>
+            <div class="form-group"><label>اكتب الاسم</label><input type="text" id="searchName" placeholder="مثال: أحمد" list="namesList"><datalist id="namesList"></datalist></div>
+            <button id="searchPersonBtn">🔍 بحث</button>
+            <div id="personSummary" class="summary"></div>
+            <div id="personTable"></div>
+            <div><button id="printPersonBtn">🖨️ طباعة / PDF شخصي</button> <button id="excelPersonBtn">📎 Excel شخصي</button></div>
+        </div>
+    </div>
+
+    <!-- تبويب التنبيهات -->
+    <div id="alerts" class="tab-content">
+        <div class="card">
+            <h3>⚙️ إعدادات التنبيهات</h3>
+            <div class="form-row">
+                <div class="form-group"><label>الحد الأقصى للدين (تجاوز سقف)</label><input type="number" id="maxDebtLimit" value="5000"></div>
+                <div class="form-group"><label>عدد أيام التأخير للتنبيه</label><input type="number" id="delayDays" value="30"></div>
+            </div>
+            <button id="saveAlertsBtn">💾 حفظ الإعدادات</button>
+            <hr>
+            <h3>⚠️ التنبيهات النشطة</h3>
+            <div id="alertsList" class="summary" style="background:#fff3e0;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ================= 1. قاعدة البيانات (IndexedDB) =================
+    let db;
+    const DB_NAME = "DebtSystemFinal";
+    const STORE_NAME = "debts";
+    let editId = null;
+
+    function openDB() {
+        return new Promise((resolve, reject) => {
+            const req = indexedDB.open(DB_NAME, 1);
+            req.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    db.createObjectStore(STORE_NAME, { keyPath: "id", autoIncrement: true });
+                }
+            };
+            req.onsuccess = () => { db = req.result; resolve(); };
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    async function getAll() {
+        return new Promise((resolve) => {
+            const tx = db.transaction(STORE_NAME, "readonly");
+            const req = tx.objectStore(STORE_NAME).getAll();
+            req.onsuccess = () => resolve(req.result || []);
+        });
+    }
+
+    async function saveDebt(debt) {
+        return new Promise((resolve) => {
+            const tx = db.transaction(STORE_NAME, "readwrite");
+            const store = tx.objectStore(STORE_NAME);
+            const req = debt.id ? store.put(debt) : store.add(debt);
+            req.onsuccess = () => resolve();
+        });
+    }
+
+    async function deleteDebtById(id) {
+        return new Promise((resolve) => {
+            const tx = db.transaction(STORE_NAME, "readwrite");
+            tx.objectStore(STORE_NAME).delete(id);
+            tx.oncomplete = () => resolve();
+        });
+    }
+
+    async function clearAllDebts() {
+        return new Promise((resolve) => {
+            const tx = db.transaction(STORE_NAME, "readwrite");
+            tx.objectStore(STORE_NAME).clear();
+            tx.oncomplete = () => resolve();
+        });
+    }
+
+    // ================= 2. دوال عرض البيانات =================
+    async function loadAndRender() {
+        const debts = await getAll();
+        renderTable(debts);
+        updateSummary(debts);
+        updateNameFilter(debts);
+        checkAlerts(debts);
+    }
+
+    function renderTable(debts) {
+        const tbody = document.querySelector("#debtsTable tbody");
+        const search = document.getElementById("searchInput").value.toLowerCase();
+        const filtered = debts.filter(d => d.name.toLowerCase().includes(search));
+        tbody.innerHTML = "";
+        filtered.forEach(d => {
+            const row = tbody.insertRow();
+            row.insertCell(0).innerText = d.name;
+            row.insertCell(1).innerText = d.date;
+            row.insertCell(2).innerText = d.amount.toFixed(2);
+            row.insertCell(3).innerText = d.paid.toFixed(2);
+            row.insertCell(4).innerText = d.note || "";
+            const actions = row.insertCell(5);
+            actions.innerHTML = `<button onclick="editDebt(${d.id})">✏️</button> <button onclick="deleteDebt(${d.id})">🗑️</button>`;
+        });
+    }
+
+    function updateSummary(debts) {
+        let totalAmt = 0, totalPaid = 0;
+        debts.forEach(d => { totalAmt += d.amount; totalPaid += d.paid; });
+        const net = totalAmt - totalPaid;
+        document.getElementById("summaryArea").innerHTML = `
+            <div>💰 إجمالي المبالغ: ${totalAmt.toFixed(2)}</div>
+            <div>✅ إجمالي المسدد: ${totalPaid.toFixed(2)}</div>
+            <div>⚖️ المتبقي: ${Math.abs(net).toFixed(2)} (${net >= 0 ? "له" : "عليه"})</div>
+        `;
+    }
+
+    async function updateNameFilter(debts) {
+        const names = [...new Set(debts.map(d => d.name))];
+        const filterSelect = document.getElementById("filterName");
+        const datalist = document.getElementById("namesList");
+        filterSelect.innerHTML = '<option value="">الكل</option>';
+        datalist.innerHTML = "";
+        names.forEach(n => {
+            filterSelect.innerHTML += `<option value="${n}">${n}</option>`;
+            datalist.innerHTML += `<option value="${n}">`;
+        });
+    }
+
+    // ================= 3. عمليات الإدخال والتعديل =================
+    document.getElementById("saveBtn").onclick = async () => {
+        const name = document.getElementById("name").value.trim();
+        const amount = parseFloat(document.getElementById("amount").value);
+        const paid = parseFloat(document.getElementById("paid").value);
+        let date = document.getElementById("date").value;
+        const note = document.getElementById("note").value;
+        if (!name || isNaN(amount) || isNaN(paid) || !date) return alert("املأ الحقول الأساسية");
+        const debt = { name, amount, paid, date, note };
+        const editIdVal = document.getElementById("editId").value;
+        if (editIdVal) debt.id = parseInt(editIdVal);
+        await saveDebt(debt);
+        clearForm();
+        await loadAndRender();
+        if (document.getElementById("monthly").classList.contains("active")) generateMonthlyReport();
+    };
+
+    function clearForm() {
+        document.getElementById("name").value = "";
+        document.getElementById("amount").value = "";
+        document.getElementById("paid").value = "";
+        document.getElementById("date").value = new Date().toISOString().slice(0,10);
+        document.getElementById("note").value = "";
+        document.getElementById("editId").value = "";
+        editId = null;
+    }
+
+    window.editDebt = async (id) => {
+        const all = await getAll();
+        const debt = all.find(d => d.id === id);
+        if (debt) {
+            document.getElementById("name").value = debt.name;
+            document.getElementById("amount").value = debt.amount;
+            document.getElementById("paid").value = debt.paid;
+            document.getElementById("date").value = debt.date;
+            document.getElementById("note").value = debt.note || "";
+            document.getElementById("editId").value = debt.id;
+            editId = debt.id;
+        }
+    };
+
+    window.deleteDebt = async (id) => {
+        if (confirm("هل تريد حذف هذا السجل؟")) {
+            await deleteDebtById(id);
+            await loadAndRender();
+            generateMonthlyReport();
+        }
+    };
+
+    document.getElementById("cancelBtn").onclick = () => location.reload();
+    document.getElementById("searchInput").oninput = loadAndRender;
+    document.getElementById("date").value = new Date().toISOString().slice(0,10);
+
+    // ================= 4. التقرير الشهري =================
+    async function generateMonthlyReport() {
+        const debts = await getAll();
+        const month = parseInt(document.getElementById("monthSelect").value);
+        const year = parseInt(document.getElementById("yearSelect").value);
+        const filterName = document.getElementById("filterName").value;
+        let filtered = debts.filter(d => {
+            if (!d.date) return false;
+            const [y, m] = d.date.split("-");
+            return parseInt(y) === year && parseInt(m) === month;
+        });
+        if (filterName) filtered = filtered.filter(d => d.name === filterName);
+        const map = new Map();
+        filtered.forEach(d => {
+            if (!map.has(d.name)) map.set(d.name, { amount: 0, paid: 0 });
+            const item = map.get(d.name);
+            item.amount += d.amount;
+            item.paid += d.paid;
+        });
+        let html = `<table border="1"><thead><tr><th>الاسم</th><th>إجمالي المدين</th><th>إجمالي المسدد</th><th>المتبقي</th></tr></thead><tbody>`;
+        let totalAmt=0, totalPaid=0;
+        for (let [name, data] of map.entries()) {
+            const bal = data.amount - data.paid;
+            totalAmt += data.amount;
+            totalPaid += data.paid;
+            html += `<tr><td>${name}</td><td>${data.amount.toFixed(2)}</td><td>${data.paid.toFixed(2)}</td><td>${Math.abs(bal).toFixed(2)} (${bal>=0?"له":"عليه"})</td></tr>`;
+        }
+        html += `</tbody></table>`;
+        const net = totalAmt - totalPaid;
+        document.getElementById("monthlyReportContainer").innerHTML = html;
+        document.getElementById("monthlyTotal").innerHTML = `<div>الإجمالي النهائي: ${net.toFixed(2)} (${net>=0?"له":"عليه"})</div>`;
+    }
+
+    // طباعة وحفظ PDF باستخدام window.print (يعمل بدون إنترنت)
+    function printMonthly() {
+        const content = document.getElementById("monthlyReportContainer").innerHTML;
+        const total = document.getElementById("monthlyTotal").innerHTML;
+        const printWindow = window.open();
+        printWindow.document.write(`
+            <html dir="rtl">
+            <head>
+                <title>تقرير شهري</title>
+                <style>
+                    body { font-family: Arial; padding: 20px; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { border: 1px solid #000; padding: 8px; text-align: center; }
+                    th { background: #2c7da0; color: white; }
+                    .summary { margin-top: 20px; font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                <h2>تقرير شهري</h2>
+                ${content}
+                <div class="summary">${total}</div>
+                <script>window.onload = () => { window.print(); setTimeout(() => window.close(), 1000); }<\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    }
+
+    // تصدير Excel باستخدام Blob (HTML Table to XLS - يعمل بدون إنترنت)
+    function exportMonthlyExcel() {
+        const table = document.querySelector("#monthlyReportContainer table");
+        if (!table) { alert("لا توجد بيانات للتصدير"); return; }
+        const htmlContent = `
+            <html dir="rtl">
+            <head><meta charset="UTF-8"><title>التقرير الشهري</title></head>
+            <body>${table.outerHTML}${document.getElementById("monthlyTotal").innerHTML}</body>
+            </html>
+        `;
+        const blob = new Blob([htmlContent], { type: "application/vnd.ms-excel" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = `تقرير_${document.getElementById("monthSelect").value}_${document.getElementById("yearSelect").value}.xls`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    document.getElementById("refreshMonthlyBtn").onclick = generateMonthlyReport;
+    document.getElementById("printMonthlyBtn").onclick = printMonthly;
+    document.getElementById("excelMonthlyBtn").onclick = exportMonthlyExcel;
+    document.getElementById("monthSelect").onchange = generateMonthlyReport;
+    document.getElementById("yearSelect").onchange = generateMonthlyReport;
+    document.getElementById("filterName").onchange = generateMonthlyReport;
+
+    // ================= 5. البحث المتقدم =================
+    async function searchPerson() {
+        const name = document.getElementById("searchName").value.trim();
+        if (!name) return;
+        const all = await getAll();
+        const records = all.filter(d => d.name === name);
+        if (!records.length) { document.getElementById("personSummary").innerHTML = "لا توجد سجلات"; document.getElementById("personTable").innerHTML = ""; return; }
+        let totalAmt = 0, totalPaid = 0;
+        records.forEach(r => { totalAmt += r.amount; totalPaid += r.paid; });
+        const bal = totalAmt - totalPaid;
+        document.getElementById("personSummary").innerHTML = `<div>💰 الإجمالي: ${totalAmt.toFixed(2)}</div><div>✅ المسدد: ${totalPaid.toFixed(2)}</div><div>⚖️ المتبقي: ${Math.abs(bal).toFixed(2)} (${bal>=0?"له":"عليه"})</div>`;
+        let html = `<table border="1"><thead><tr><th>التاريخ</th><th>المبلغ</th><th>المسدد</th><th>ملاحظة</th></tr></thead><tbody>`;
+        records.forEach(r => { html += `<tr><td>${r.date}</td><td>${r.amount.toFixed(2)}</td><td>${r.paid.toFixed(2)}</td><td>${r.note||""}</td></tr>`; });
+        html += `</tbody></table>`;
+        document.getElementById("personTable").innerHTML = html;
+    }
+
+    function printPerson() {
+        const summary = document.getElementById("personSummary").innerHTML;
+        const table = document.getElementById("personTable").innerHTML;
+        const printWindow = window.open();
+        printWindow.document.write(`
+            <html dir="rtl">
+            <head><title>كشف شخصي</title><style>table{border-collapse:collapse;width:100%}th,td{border:1px solid #000;padding:8px}</style></head>
+            <body><h2>كشف حساب</h2>${summary}${table}<script>window.onload = () => { window.print(); setTimeout(() => window.close(), 1000); }<\/script></body>
+            </html>
+        `);
+        printWindow.document.close();
+    }
+
+    function exportPersonExcel() {
+        const table = document.querySelector("#personTable table");
+        if (!table) { alert("لا توجد بيانات"); return; }
+        const htmlContent = `<html dir="rtl"><head><meta charset="UTF-8"><title>كشف شخصي</title></head><body>${table.outerHTML}</body></html>`;
+        const blob = new Blob([htmlContent], { type: "application/vnd.ms-excel" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = "كشف_شخصي.xls";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    document.getElementById("searchPersonBtn").onclick = searchPerson;
+    document.getElementById("printPersonBtn").onclick = printPerson;
+    document.getElementById("excelPersonBtn").onclick = exportPersonExcel;
+
+    // ================= 6. تصدير واستيراد عام (Excel) =================
+    async function exportAllToExcel() {
+        const all = await getAll();
+        if (!all.length) { alert("لا توجد بيانات لتصديرها"); return; }
+        let html = `<table border="1"><thead><tr><th>الاسم</th><th>التاريخ</th><th>المبلغ</th><th>المسدد</th><th>ملاحظة</th></tr></thead><tbody>`;
+        all.forEach(d => {
+            html += `<tr><td>${d.name}</td><td>${d.date}</td><td>${d.amount}</td><td>${d.paid}</td><td>${d.note||""}</td></tr>`;
+        });
+        html += `</tbody></table>`;
+        const blob = new Blob([`<html dir="rtl"><head><meta charset="UTF-8"></head><body>${html}</body></html>`], { type: "application/vnd.ms-excel" });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = `all_debts_${new Date().toISOString().slice(0,19)}.xls`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
+    function importExcel() {
+        alert("لا يمكن الاستيراد بدون إنترنت لأن المكتبات غير متوفرة. يمكنك إضافة البيانات يدوياً.");
+    }
+
+    document.getElementById("exportAllExcelBtn").onclick = exportAllToExcel;
+    document.getElementById("importExcelBtn").onclick = importExcel;
+
+    // ================= 7. التنبيهات =================
+    let maxDebtLimit = 5000, delayDays = 30;
+    function loadAlertSettings() {
+        maxDebtLimit = parseInt(localStorage.getItem("maxDebtLimit")) || 5000;
+        delayDays = parseInt(localStorage.getItem("delayDays")) || 30;
+        document.getElementById("maxDebtLimit").value = maxDebtLimit;
+        document.getElementById("delayDays").value = delayDays;
+    }
+    function saveAlertSettings() {
+        maxDebtLimit = parseInt(document.getElementById("maxDebtLimit").value);
+        delayDays = parseInt(document.getElementById("delayDays").value);
+        localStorage.setItem("maxDebtLimit", maxDebtLimit);
+        localStorage.setItem("delayDays", delayDays);
+        alert("تم حفظ الإعدادات");
+        checkAlerts();
+    }
+    async function checkAlerts(debts = null) {
+        if (!debts) debts = await getAll();
+        const persons = new Map();
+        debts.forEach(d => {
+            if (!persons.has(d.name)) persons.set(d.name, { totalAmount:0, totalPaid:0, lastDate: d.date });
+            const p = persons.get(d.name);
+            p.totalAmount += d.amount;
+            p.totalPaid += d.paid;
+            if (d.date > p.lastDate) p.lastDate = d.date;
+        });
+        const today = new Date();
+        const alerts = [];
+        for (let [name, data] of persons.entries()) {
+            const remaining = data.totalAmount - data.totalPaid;
+            if (remaining > maxDebtLimit) alerts.push(`⚠️ ${name} : تجاوز سقف الدين (المتبقي ${remaining.toFixed(2)} > ${maxDebtLimit})`);
+            if (data.lastDate) {
+                const last = new Date(data.lastDate);
+                const diff = Math.floor((today - last) / (1000*3600*24));
+                if (diff > delayDays && remaining > 0) alerts.push(`⏰ ${name} : تأخر عن السداد منذ ${diff} يوم (آخر تاريخ ${data.lastDate})`);
+            }
+        }
+        const alertsDiv = document.getElementById("alertsList");
+        if (alerts.length === 0) alertsDiv.innerHTML = "<div>✅ لا توجد تنبيهات</div>";
+        else alertsDiv.innerHTML = alerts.map(a => `<div style="margin:8px;padding:8px;background:#ffe0e0;border-radius:12px;">🔔 ${a}</div>`).join('');
+        if (Notification.permission === "granted" && alerts.length > 0) {
+            new Notification("تنبيهات الديون", { body: `لديك ${alerts.length} تنبيه جديد` });
+        }
+    }
+    document.getElementById("saveAlertsBtn").onclick = saveAlertSettings;
+    if (Notification.permission !== "granted" && Notification.permission !== "denied") Notification.requestPermission();
+
+    // ================= 8. التبويبات والإعدادات الأولية =================
+    function initSelectors() {
+        const monthSel = document.getElementById("monthSelect");
+        for (let i=1;i<=12;i++) monthSel.innerHTML += `<option value="${i}">${i}</option>`;
+        monthSel.value = new Date().getMonth()+1;
+        const yearSel = document.getElementById("yearSelect");
+        const cy = new Date().getFullYear();
+        for (let y=cy-2; y<=cy+2; y++) yearSel.innerHTML += `<option value="${y}">${y}</option>`;
+        yearSel.value = cy;
+    }
+    function setupTabs() {
+        document.querySelectorAll(".tab").forEach(tab => {
+            tab.onclick = () => {
+                document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+                tab.classList.add("active");
+                document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+                document.getElementById(tab.dataset.tab).classList.add("active");
+                if (tab.dataset.tab === "monthly") generateMonthlyReport();
+                if (tab.dataset.tab === "alerts") checkAlerts();
+            };
+        });
+    }
+
+    // ================= 9. تثبيت التطبيق (PWA) الفعال =================
+    let deferredPrompt;
+    window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        document.getElementById("installPwaBtn").style.display = "inline-block";
+    });
+    document.getElementById("installPwaBtn").onclick = async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === "accepted") {
+                document.getElementById("installPwaBtn").style.display = "none";
+                alert("تم تثبيت التطبيق! يمكنك إغلاق المتصفح واستخدامه من الشاشة الرئيسية.");
+            }
+            deferredPrompt = null;
+        } else {
+            alert("المتصفح لا يدعم التثبيت التلقائي الآن. يمكنك تثبيته يدوياً عبر قائمة المتصفح (ثلاث نقاط) → 'تثبيت التطبيق'.");
+        }
+    };
+    if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("sw.js").catch(err => console.log("SW register failed:", err));
+    }
+
+    // ================= 10. بدء التشغيل =================
+    (async () => {
+        await openDB();
+        initSelectors();
+        setupTabs();
+        loadAlertSettings();
+        await loadAndRender();
+        generateMonthlyReport();
+        setInterval(async () => { await checkAlerts(); }, 60000);
+    })();
+</script>
+</body>
+</html>

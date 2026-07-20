@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>دفتر الحسابات — نظام إدارة الديون</title>
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1b4b43">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="lockScreen" class="lock-screen" style="display:none;">
+  <img src="icons/icon-192.png" width="56" height="56" style="border-radius:14px;" alt="">
+  <div style="font-weight:800;font-size:16px;">مقفل — أدخل رمز الدخول</div>
+  <div class="pin-dots" id="pinDots"></div>
+  <div class="pin-pad" id="pinPad"></div>
+  <div id="pinError" style="color:#ffb4ae;font-size:12.5px;min-height:16px;"></div>
+</div>
+
+<div class="app-shell" id="appShell">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="icons/icon-192.png" alt="">
+      <div>
+        <div class="t1">دفتر الحسابات</div>
+        <div class="t2">إدارة ديون بدون إنترنت</div>
+      </div>
+    </div>
+    <div class="nav-item active" data-view="dashboard"><span class="ic">📊</span> لوحة التحكم</div>
+    <div class="nav-item" data-view="customers"><span class="ic">👥</span> العملاء</div>
+    <div class="nav-item" data-view="newTransaction"><span class="ic">➕</span> عملية جديدة</div>
+    <div class="nav-item" data-view="search"><span class="ic">🔍</span> بحث</div>
+    <div class="nav-item" data-view="reports"><span class="ic">📅</span> التقارير</div>
+    <div class="nav-item" data-view="alerts"><span class="ic">🔔</span> التنبيهات</div>
+    <div class="nav-item" data-view="backup"><span class="ic">💾</span> النسخ الاحتياطي</div>
+    <div class="nav-item" data-view="settings"><span class="ic">⚙️</span> الإعدادات</div>
+    <div class="sidebar-foot">دفتر الحسابات — يعمل بالكامل دون إنترنت</div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1 id="pageTitle">لوحة التحكم</h1>
+        <div class="sub" id="pageSub">نظرة عامة سريعة على حساباتك</div>
+      </div>
+      <div class="btn-row">
+        <button id="installPwaBtn" class="gold" style="display:none;">📲 تثبيت التطبيق</button>
+        <button id="themeToggleBtn" class="ghost">🌙</button>
+      </div>
+    </div>
+
+    <!-- ===================== لوحة التحكم ===================== -->
+    <div id="view-dashboard" class="view active">
+      <div class="grid cols-4" id="dashStats"></div>
+      <div class="grid cols-2" style="margin-top:18px;">
+        <div class="card">
+          <h3>أعلى المدينين <span class="muted">— الأكثر رصيدًا مستحقًا</span></h3>
+          <div id="topDebtors"></div>
+        </div>
+        <div class="card">
+          <h3>آخر العمليات</h3>
+          <div id="recentTxns"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== العملاء ===================== -->
+    <div id="view-customers" class="view">
+      <div class="card">
+        <div class="form-row" style="align-items:flex-end;">
+          <div class="form-group"><input type="text" id="customersFilterInput" placeholder="🔍 ابحث بالاسم أو الهاتف..."></div>
+          <div class="form-group" style="max-width:160px;">
+            <select id="customersSort">
+              <option value="pinned">المثبّتون أولاً</option>
+              <option value="name">الاسم</option>
+              <option value="balance_desc">الأعلى دينًا</option>
+              <option value="recent">الأحدث نشاطًا</option>
+            </select>
+          </div>
+          <div class="form-group" style="max-width:140px;">
+            <button id="toggleArchivedBtn" class="secondary" style="width:100%;">عرض المؤرشفين</button>
+          </div>
+          <div class="form-group" style="max-width:160px;">
+            <button id="addCustomerBtn" style="width:100%;">➕ عميل جديد</button>
+          </div>
+        </div>
+      </div>
+      <div class="grid cols-3" id="customersGrid"></div>
+    </div>
+
+    <!-- ===================== كشف حساب عميل ===================== -->
+    <div id="view-statement" class="view">
+      <button class="secondary sm no-print" id="backToCustomersBtn">→ رجوع للعملاء</button>
+      <div class="grid cols-2" style="grid-template-columns: 1fr 1.4fr; margin-top:14px; align-items:start;">
+        <div class="receipt" id="statementReceipt"></div>
+        <div>
+          <div class="card no-print">
+            <h3>إجراءات</h3>
+            <div class="btn-row">
+              <button id="stAddDebtBtn" class="danger">➕ تسجيل دين</button>
+              <button id="stAddPaymentBtn" style="background:var(--pay);">✅ تسجيل سداد</button>
+              <button id="stSettleBtn" class="gold">⚖️ تصفية الحساب</button>
+              <button id="stEditCustomerBtn" class="secondary">✏️ تعديل بيانات العميل</button>
+              <button id="stPinBtn" class="ghost">📌 تثبيت/إلغاء</button>
+              <button id="stArchiveBtn" class="ghost">🗄️ أرشفة/استعادة</button>
+              <button id="stPrintBtn" class="secondary">🖨️ طباعة / PDF</button>
+              <button id="stExcelBtn" class="secondary">📎 تصدير Excel</button>
+              <button id="stDeleteBtn" class="danger">🗑️ حذف العميل</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>سجل العمليات</h3>
+            <div class="table-wrap"><table id="statementTable">
+              <thead><tr><th>التاريخ</th><th>النوع</th><th>المبلغ</th><th>ملاحظة</th><th>إجراءات</th></tr></thead>
+              <tbody></tbody>
+            </table></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== عملية جديدة ===================== -->
+    <div id="view-newTransaction" class="view">
+      <div class="card" style="max-width:560px;">
+        <h3>تسجيل عملية جديدة</h3>
+        <label>العميل</label>
+        <select id="ntCustomer"></select>
+        <div class="field-hint">لا تجد العميل؟ أضِفه أولًا من صفحة "العملاء".</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>نوع العملية</label>
+            <select id="ntType"><option value="debt">دين (على العميل)</option><option value="payment">سداد (من العميل)</option></select>
+          </div>
+          <div class="form-group"><label>المبلغ</label><input type="number" id="ntAmount" step="0.01" placeholder="0.00"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>التاريخ</label><input type="date" id="ntDate"></div>
+        </div>
+        <label>ملاحظة</label>
+        <textarea id="ntNote" rows="2" placeholder="اختياري"></textarea>
+        <div class="btn-row" style="margin-top:8px;">
+          <button id="ntSaveBtn">💾 حفظ العملية</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== البحث ===================== -->
+    <div id="view-search" class="view">
+      <div class="card">
+        <input type="text" id="searchInput" placeholder="🔍 ابحث بالاسم، الهاتف، الملاحظة، المبلغ أو التاريخ...">
+      </div>
+      <div class="card">
+        <h3>نتائج العملاء</h3>
+        <div id="searchCustomers"></div>
+      </div>
+      <div class="card">
+        <h3>نتائج العمليات</h3>
+        <div class="table-wrap"><table id="searchTxnsTable">
+          <thead><tr><th>العميل</th><th>التاريخ</th><th>النوع</th><th>المبلغ</th><th>ملاحظة</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- ===================== التقارير ===================== -->
+    <div id="view-reports" class="view">
+      <div class="card">
+        <h3>فلاتر التقرير</h3>
+        <div class="form-row">
+          <div class="form-group"><label>من تاريخ</label><input type="date" id="repFrom"></div>
+          <div class="form-group"><label>إلى تاريخ</label><input type="date" id="repTo"></div>
+          <div class="form-group"><label>العميل</label><select id="repCustomer"><option value="">كل العملاء</option></select></div>
+          <div class="form-group"><label>النوع</label><select id="repType"><option value="">الكل</option><option value="debt">ديون فقط</option><option value="payment">سداد فقط</option></select></div>
+        </div>
+        <div class="btn-row">
+          <button id="repRunBtn">🔄 عرض التقرير</button>
+          <button id="repPrintBtn" class="secondary">🖨️ طباعة / PDF</button>
+          <button id="repExcelBtn" class="secondary">📎 Excel حقيقي (.xlsx)</button>
+          <button id="repCsvBtn" class="secondary">📄 CSV</button>
+        </div>
+      </div>
+      <div class="grid cols-3" id="repStats"></div>
+      <div class="card">
+        <div class="table-wrap"><table id="repTable">
+          <thead><tr><th>التاريخ</th><th>العميل</th><th>النوع</th><th>المبلغ</th><th>ملاحظة</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- ===================== التنبيهات ===================== -->
+    <div id="view-alerts" class="view">
+      <div class="card">
+        <h3>⚙️ إعدادات التنبيهات</h3>
+        <div class="form-row">
+          <div class="form-group"><label>الحد الأقصى للدين (سقف تنبيه)</label><input type="number" id="maxDebtLimit"></div>
+          <div class="form-group"><label>عدد أيام التأخير للتنبيه</label><input type="number" id="delayDays"></div>
+        </div>
+        <button id="saveAlertsBtn">💾 حفظ الإعدادات</button>
+      </div>
+      <div class="card">
+        <h3>⚠️ التنبيهات النشطة</h3>
+        <div id="alertsList"></div>
+      </div>
+    </div>
+
+    <!-- ===================== النسخ الاحتياطي ===================== -->
+    <div id="view-backup" class="view">
+      <div class="card">
+        <h3>💾 نسخة احتياطية</h3>
+        <p class="field-hint" id="lastBackupInfo"></p>
+        <div class="btn-row">
+          <button id="exportJsonBtn">⬇️ تصدير نسخة احتياطية (JSON)</button>
+          <button id="importJsonBtn" class="secondary">⬆️ استيراد نسخة احتياطية</button>
+          <input type="file" id="importJsonFile" accept="application/json" style="display:none;">
+        </div>
+      </div>
+      <div class="card">
+        <h3>سجل النشاط (Audit Log)</h3>
+        <div class="table-wrap"><table id="auditTable">
+          <thead><tr><th>التاريخ</th><th>الإجراء</th><th>التفاصيل</th></tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- ===================== الإعدادات ===================== -->
+    <div id="view-settings" class="view">
+      <div class="card" style="max-width:520px;">
+        <h3>المظهر</h3>
+        <div class="btn-row">
+          <button id="setLightBtn" class="secondary">☀️ فاتح</button>
+          <button id="setDarkBtn" class="secondary">🌙 داكن</button>
+        </div>
+      </div>
+      <div class="card" style="max-width:520px;">
+        <h3>الحماية برمز PIN</h3>
+        <div id="pinStatus" class="field-hint"></div>
+        <div class="btn-row">
+          <button id="setPinBtn" class="secondary">🔒 تعيين / تغيير الرمز</button>
+          <button id="removePinBtn" class="danger">🔓 إزالة الحماية</button>
+        </div>
+      </div>
+      <div class="card" style="max-width:520px;border-color:var(--debt);">
+        <h3 style="color:var(--debt);">⚠️ منطقة خطر</h3>
+        <p class="field-hint">مسح جميع العملاء والعمليات وسجل النشاط نهائيًا من هذا الجهاز. لا يمكن التراجع عن هذا الإجراء إلا باستعادة نسخة احتياطية سابقة.</p>
+        <div class="btn-row">
+          <button id="goBackupBeforeWipeBtn" class="secondary">💾 خذ نسخة احتياطية أولًا</button>
+          <button id="wipeAllBtn" class="danger">🗑️ مسح كل البيانات نهائيًا</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<nav class="mobile-tabbar" id="mobileTabbar"></nav>
+<div id="toast"></div>
+<div id="modalRoot"></div>
+
+<script src="js/lib/xlsx.full.min.js"></script>
+<script src="js/db.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

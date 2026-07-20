@@ -1,0 +1,365 @@
+/* =========================================================================
+   style.css — هوية مطابقة لنظام "ديوني" الأصلي (أزرق مسطّح + خلفية رمادية فاتحة)
+   مع الإبقاء على الألوان الدلالية للدين (أحمر) والسداد (أخضر) من تحسيناتنا.
+   ========================================================================= */
+
+:root {
+  --bg: #f0f2f5;
+  --surface: #ffffff;
+  --surface-alt: #e9f5f9;
+  --ink: #1c2321;
+  --ink-soft: #5b6560;
+  --line: #dfe3dc;
+
+  --brand: #2c7da0;      /* أزرق النظام الأصلي */
+  --brand-ink: #184a5e;
+  --brand-soft: #e9f5f9;
+
+  --gold: #4caf50;       /* أخضر التمييز (كأزرار التصدير في النظام الأصلي) */
+  --gold-soft: #eaf7ea;
+
+  --debt: #a8433a;       /* أحمر آجري هادئ (دين) */
+  --debt-soft: #f8e8e6;
+  --pay: #2e7d5b;        /* أخضر سداد */
+  --pay-soft: #e4f1ea;
+
+  --radius-s: 12px;
+  --radius-m: 16px;
+  --radius-l: 24px;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lift: 0 10px 30px rgba(0, 0, 0, 0.14);
+
+  --font-display: "Segoe UI", "Tahoma", "Cairo", sans-serif;
+  --font-body: "Segoe UI", "Tahoma", Arial, sans-serif;
+  --font-mono: "Consolas", "Courier New", monospace;
+}
+
+[data-theme="dark"] {
+  --bg: #141c22;
+  --surface: #1c2932;
+  --surface-alt: #223642;
+  --ink: #eef3ef;
+  --ink-soft: #a8b8b0;
+  --line: #2c3f38;
+
+  --brand: #6fbfdf;
+  --brand-ink: #eef3ef;
+  --brand-soft: #203440;
+
+  --gold: #7fd88a;
+  --gold-soft: #1e3320;
+
+  --debt: #e19089;
+  --debt-soft: #3a2422;
+  --pay: #86d1af;
+  --pay-soft: #1e3329;
+
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  --shadow-lift: 0 12px 34px rgba(0, 0, 0, 0.45);
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  direction: rtl;
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select, textarea { font-family: inherit; }
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 248px 1fr;
+  min-height: 100vh;
+}
+@media (max-width: 900px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .sidebar { position: fixed; inset: auto 0 0 0; z-index: 40; }
+}
+
+/* ---------------------------- الشريط الجانبي ---------------------------- */
+.sidebar {
+  background: var(--brand);
+  color: #f4f7f9;
+  padding: 20px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 8px 22px;
+  border-bottom: 1px solid rgba(255,255,255,0.14);
+  margin-bottom: 14px;
+}
+.brand img { width: 34px; height: 34px; border-radius: 8px; }
+.brand .t1 { font-weight: 700; font-size: 15px; line-height: 1.3; }
+.brand .t2 { font-size: 11px; opacity: 0.75; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px;
+  border-radius: var(--radius-m);
+  color: #dcedf5;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background .15s ease, color .15s ease;
+  user-select: none;
+}
+.nav-item .ic { font-size: 16px; width: 20px; text-align: center; }
+.nav-item:hover { background: rgba(255,255,255,0.08); }
+.nav-item.active { background: var(--gold); color: var(--brand-ink); }
+
+.sidebar-foot {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.14);
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+/* --------------------------------- المحتوى -------------------------------- */
+.main { padding: 22px 26px 90px; max-width: 1280px; width: 100%; margin: 0 auto; }
+@media (max-width: 900px) { .main { padding: 16px 14px 100px; } }
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.topbar h1 { font-size: 21px; margin: 0; font-family: var(--font-display); }
+.topbar .sub { color: var(--ink-soft); font-size: 13px; margin-top: 2px; }
+
+.view { display: none; }
+.view.active { display: block; animation: fadeIn .22s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  margin-bottom: 18px;
+}
+.card h3 { margin: 0 0 14px; font-size: 15px; font-family: var(--font-display); }
+.card h3 .muted { color: var(--ink-soft); font-weight: 400; font-size: 12px; }
+
+.grid { display: grid; gap: 16px; }
+.grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 900px) { .grid.cols-4, .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .grid.cols-4, .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; } }
+
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+}
+.stat .label { font-size: 12px; color: var(--ink-soft); margin-bottom: 8px; }
+.stat .value { font-size: 24px; font-weight: 700; font-family: var(--font-display); }
+.stat.debt .value { color: var(--debt); }
+.stat.pay .value { color: var(--pay); }
+.stat.brand .value { color: var(--brand); }
+[data-theme="dark"] .stat.brand .value { color: var(--gold); }
+
+/* --------------------------------- أزرار --------------------------------- */
+button {
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: transform .12s ease, opacity .12s ease;
+}
+button:hover { opacity: .92; }
+button:active { transform: scale(0.97); }
+button.secondary { background: var(--surface-alt); color: var(--ink); }
+button.ghost { background: transparent; color: var(--brand); box-shadow: inset 0 0 0 1.5px var(--brand); }
+[data-theme="dark"] button.ghost { color: var(--gold); box-shadow: inset 0 0 0 1.5px var(--gold); }
+button.gold { background: var(--gold); color: #2b2109; }
+button.danger { background: var(--debt); }
+button.sm { padding: 6px 12px; font-size: 12px; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* --------------------------------- نماذج ---------------------------------- */
+label { display: block; font-size: 12.5px; color: var(--ink-soft); margin-bottom: 6px; font-weight: 600; }
+input, select, textarea {
+  width: 100%;
+  padding: 10px 13px;
+  border-radius: var(--radius-s);
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--brand);
+}
+[data-theme="dark"] input:focus, [data-theme="dark"] select:focus, [data-theme="dark"] textarea:focus { border-color: var(--gold); }
+.form-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+.form-group { flex: 1; min-width: 170px; }
+.field-hint { font-size: 11px; color: var(--ink-soft); margin-bottom: 10px; }
+
+/* -------------------------------- جداول ----------------------------------- */
+.table-wrap { overflow-x: auto; border-radius: var(--radius-m); border: 1px solid var(--line); }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th, td { padding: 10px 12px; text-align: center; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { background: var(--brand); color: #fff; font-weight: 700; position: sticky; top: 0; }
+tbody tr:hover { background: var(--surface-alt); }
+td.name-cell { text-align: right; font-weight: 600; }
+.pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+.pill.debt { background: var(--debt-soft); color: var(--debt); }
+.pill.pay { background: var(--pay-soft); color: var(--pay); }
+.pill.ok { background: var(--pay-soft); color: var(--pay); }
+.pill.warn { background: var(--gold-soft); color: var(--gold); }
+.pill.danger { background: var(--debt-soft); color: var(--debt); }
+
+/* ------------------------------ بطاقات عملاء ------------------------------ */
+.customer-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  padding: 16px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: box-shadow .15s ease, transform .15s ease;
+  position: relative;
+}
+.customer-card:hover { box-shadow: var(--shadow-lift); transform: translateY(-2px); }
+.customer-card .pin-badge { position: absolute; top: 12px; left: 12px; color: var(--gold); font-size: 15px; }
+.customer-card .name { font-weight: 700; font-size: 15px; margin-bottom: 3px; }
+.customer-card .phone { font-size: 12px; color: var(--ink-soft); margin-bottom: 10px; }
+.customer-card .balance { font-size: 19px; font-weight: 700; font-family: var(--font-display); }
+.customer-card.status-debt { border-inline-start: 4px solid var(--debt); }
+.customer-card.status-clear { border-inline-start: 4px solid var(--pay); }
+.customer-card.status-zero { border-inline-start: 4px solid var(--line); }
+
+/* --------------------------- كشف الحساب: "إيصال" -------------------------- */
+.receipt {
+  background: var(--surface);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow);
+  position: relative;
+  padding: 26px 26px 20px;
+  border: 1px dashed var(--line);
+}
+.receipt::before, .receipt::after {
+  content: "";
+  position: absolute;
+  width: 22px; height: 22px;
+  background: var(--bg);
+  border-radius: 50%;
+  top: 50%; transform: translateY(-50%);
+}
+.receipt::before { left: -11px; }
+.receipt::after { right: -11px; }
+.receipt .stamp {
+  position: absolute; top: 18px; left: 22px;
+  border: 2px solid var(--gold); color: var(--gold);
+  border-radius: 50%; width: 62px; height: 62px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10.5px; font-weight: 800; text-align: center;
+  transform: rotate(-14deg); opacity: 0.85; line-height: 1.15;
+}
+.receipt-head { text-align: center; border-bottom: 1px dashed var(--line); padding-bottom: 14px; margin-bottom: 14px; }
+.receipt-head .cname { font-size: 19px; font-weight: 800; font-family: var(--font-display); }
+.receipt-head .cmeta { font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
+.receipt-balance { text-align: center; padding: 6px 0 16px; }
+.receipt-balance .amt { font-size: 30px; font-weight: 800; font-family: var(--font-mono); }
+.receipt-balance .cap { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+
+/* -------------------------------- تبويبات فرعية ---------------------------- */
+.subtabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.subtab { padding: 8px 18px; border-radius: 999px; background: var(--surface-alt); font-size: 13px; font-weight: 600; cursor: pointer; }
+.subtab.active { background: var(--brand); color: #fff; }
+[data-theme="dark"] .subtab.active { background: var(--gold); color: var(--brand-ink); }
+
+/* -------------------------------- تنبيهات/فارغ ----------------------------- */
+.empty-state { text-align: center; padding: 46px 20px; color: var(--ink-soft); }
+.empty-state .ic { font-size: 32px; margin-bottom: 10px; }
+.alert-row { padding: 12px 14px; border-radius: var(--radius-s); margin-bottom: 8px; font-size: 13.5px; display: flex; gap: 10px; align-items: center; }
+.alert-row.warn { background: var(--gold-soft); color: #6b4e17; }
+.alert-row.danger { background: var(--debt-soft); color: var(--debt); }
+[data-theme="dark"] .alert-row.warn { color: var(--gold); }
+
+/* -------------------------------- توست ------------------------------------ */
+#toast {
+  position: fixed; bottom: 20px; right: 20px; z-index: 200;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toast-msg {
+  background: var(--ink); color: var(--bg);
+  padding: 11px 18px; border-radius: var(--radius-m);
+  font-size: 13.5px; box-shadow: var(--shadow-lift);
+  animation: slideUp .2s ease;
+}
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ------------------------------ نافذة منبثقة ------------------------------ */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(10,15,13,0.45);
+  display: flex; align-items: center; justify-content: center; z-index: 100;
+  padding: 16px;
+}
+.modal-box {
+  background: var(--surface); border-radius: var(--radius-l);
+  padding: 22px; width: 100%; max-width: 420px;
+  box-shadow: var(--shadow-lift);
+}
+.modal-box h3 { margin-top: 0; }
+
+/* --------------------------------- شريط سفلي (جوال) ------------------------ */
+.mobile-tabbar {
+  display: none;
+}
+@media (max-width: 900px) {
+  .mobile-tabbar {
+    display: flex; position: fixed; bottom: 0; right: 0; left: 0;
+    background: var(--brand); z-index: 50;
+    padding: 6px 4px; box-shadow: 0 -4px 12px rgba(0,0,0,0.15);
+  }
+  .mobile-tabbar .nav-item { flex: 1; flex-direction: column; font-size: 10px; gap: 2px; text-align: center; padding: 8px 2px; }
+  .sidebar { display: none; }
+  .app-shell { grid-template-columns: 1fr; }
+}
+
+/* -------------------------------- قفل PIN ---------------------------------- */
+.lock-screen {
+  position: fixed; inset: 0; background: var(--brand); z-index: 300;
+  display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+  color: #fff;
+}
+.pin-dots { display: flex; gap: 12px; }
+.pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; }
+.pin-dot.filled { background: var(--gold); border-color: var(--gold); }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 64px); gap: 12px; }
+.pin-pad button { width: 64px; height: 64px; border-radius: 50%; font-size: 20px; background: rgba(255,255,255,0.12); }
+
+/* --------------------------------- طباعة ----------------------------------- */
+@media print {
+  .sidebar, .mobile-tabbar, .topbar .btn-row, .no-print { display: none !important; }
+  .app-shell { display: block; }
+  .main { padding: 0; max-width: 100%; }
+  body { background: #fff; }
+  .card, .receipt { box-shadow: none; border: 1px solid #999; }
+  .receipt::before, .receipt::after { display: none; }
+}
+
+.install-hint {
+  background: var(--gold-soft); color: #6b4e17; border-radius: var(--radius-m);
+  padding: 10px 16px; font-size: 12.5px; margin-bottom: 14px; display: flex;
+  justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+[data-theme="dark"] .install-hint { color: var(--gold); }
