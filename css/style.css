@@ -1,7 +1,5 @@
 /* =========================================================================
-   style.css — هوية مطابقة لنظام "ديوني" الأصلي (أزرق مسطّح + خلفية رمادية فاتحة)
-   مع الإبقاء على الألوان الدلالية للدين (أحمر) والسداد (أخضر) من تحسيناتنا.
-   تحسينات الهاتف والـ Responsive Design + دعم كامل للوضع الأفقي
+   style.css — نسخة محسّنة مع إصلاح مشاكل الوضع الأفقي والصفحات الداخلية
    ========================================================================= */
 
 :root {
@@ -12,16 +10,16 @@
   --ink-soft: #5b6560;
   --line: #dfe3dc;
 
-  --brand: #2c7da0;      /* أزرق النظام الأصلي */
+  --brand: #2c7da0;
   --brand-ink: #184a5e;
   --brand-soft: #e9f5f9;
 
-  --gold: #4caf50;       /* أخضر التمييز (كأزرار التصدير في النظام الأصلي) */
+  --gold: #4caf50;
   --gold-soft: #eaf7ea;
 
-  --debt: #a8433a;       /* أحمر آجري هادئ (دين) */
+  --debt: #a8433a;
   --debt-soft: #f8e8e6;
-  --pay: #2e7d5b;        /* أخضر سداد */
+  --pay: #2e7d5b;
   --pay-soft: #e4f1ea;
 
   --radius-s: 12px;
@@ -60,7 +58,7 @@
 }
 
 * { box-sizing: border-box; }
-html, body { height: 100%; }
+html, body { height: 100%; overflow-x: hidden; }
 body {
   margin: 0;
   background: var(--bg);
@@ -68,6 +66,9 @@ body {
   font-family: var(--font-body);
   direction: rtl;
   -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
 }
 button, input, select, textarea { font-family: inherit; }
 
@@ -77,20 +78,15 @@ button, input, select, textarea { font-family: inherit; }
   min-height: 100vh;
 }
 
-/* ============= دعم الوضع الأفقي (Landscape) والهواتف ============= */
 @media (max-width: 1024px) {
   .app-shell { grid-template-columns: 1fr; }
   .sidebar { position: fixed; inset: auto 0 0 0; z-index: 40; height: 60px; overflow: hidden; }
 }
 
-/* ============= دعم الشاشات العريضة الأفقية (Landscape Tablets/Phones) ============= */
-@media (max-height: 500px) and (orientation: landscape) {
-  .app-shell { grid-template-columns: 1fr; }
-  .sidebar { height: 50px; }
-  .main { padding: 12px 12px 80px; }
-  .topbar h1 { font-size: 16px; }
-  button { padding: 8px 14px; font-size: 12px; }
-  .card { padding: 14px; margin-bottom: 12px; }
+/* ============= دعم الوضع الأفقي الكامل ============= */
+@media (max-height: 600px) and (orientation: landscape) {
+  html, body { height: auto; min-height: 100vh; }
+  .app-shell { min-height: auto; display: flex; flex-direction: column; }
 }
 
 /* ---------------------------- الشريط الجانبي ---------------------------- */
@@ -148,10 +144,30 @@ button, input, select, textarea { font-family: inherit; }
 }
 
 /* --------------------------------- المحتوى -------------------------------- */
-.main { padding: 22px 26px 90px; max-width: 1280px; width: 100%; margin: 0 auto; }
-@media (max-width: 1024px) { .main { padding: 16px 12px 100px; } }
-@media (max-width: 600px) { .main { padding: 12px 8px 100px; } }
-@media (max-height: 500px) and (orientation: landscape) { .main { padding: 10px 8px 70px; } }
+.main { 
+  padding: 22px 26px 90px; 
+  max-width: 1280px; 
+  width: 100%; 
+  margin: 0 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 1024px) { 
+  .main { padding: 16px 12px 100px; } 
+}
+
+@media (max-width: 600px) { 
+  .main { padding: 12px 8px 100px; } 
+}
+
+@media (max-height: 600px) and (orientation: landscape) { 
+  .main { 
+    padding: 8px 8px 60px;
+    overflow-y: auto;
+    max-height: calc(100vh - 60px);
+  } 
+}
 
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
@@ -165,10 +181,10 @@ button, input, select, textarea { font-family: inherit; }
   .topbar .sub { font-size: 12px; }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-height: 600px) and (orientation: landscape) {
   .topbar h1 { font-size: 14px; margin-bottom: 0; }
   .topbar .sub { display: none; }
-  .topbar { margin-bottom: 10px; gap: 8px; }
+  .topbar { margin-bottom: 8px; gap: 6px; }
 }
 
 .view { display: none; }
@@ -191,9 +207,13 @@ button, input, select, textarea { font-family: inherit; }
   .card h3 { font-size: 14px; }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
-  .card { padding: 12px; border-radius: 12px; margin-bottom: 10px; }
-  .card h3 { font-size: 12px; margin-bottom: 8px; }
+@media (max-height: 600px) and (orientation: landscape) {
+  .card { 
+    padding: 12px; 
+    border-radius: 12px; 
+    margin-bottom: 8px;
+  }
+  .card h3 { font-size: 12px; margin-bottom: 6px; }
 }
 
 .grid { display: grid; gap: 16px; }
@@ -201,7 +221,6 @@ button, input, select, textarea { font-family: inherit; }
 .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
 .grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
 
-/* تحسينات Responsive - التبويبات والشبكات */
 @media (max-width: 1024px) { 
   .grid.cols-4, .grid.cols-3 { grid-template-columns: repeat(2, 1fr); } 
 }
@@ -211,7 +230,7 @@ button, input, select, textarea { font-family: inherit; }
   .grid { gap: 12px; }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-height: 600px) and (orientation: landscape) {
   .grid { gap: 8px; }
   .grid.cols-4, .grid.cols-3, .grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
 }
@@ -236,7 +255,7 @@ button, input, select, textarea { font-family: inherit; }
   .stat .value { font-size: 18px; }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-height: 600px) and (orientation: landscape) {
   .stat { padding: 8px 10px; }
   .stat .label { font-size: 10px; }
   .stat .value { font-size: 14px; }
@@ -253,6 +272,8 @@ button {
   font-size: 13.5px;
   font-weight: 600;
   transition: transform .12s ease, opacity .12s ease;
+  -webkit-user-select: none;
+  user-select: none;
 }
 button:hover { opacity: .92; }
 button:active { transform: scale(0.97); }
@@ -271,7 +292,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
   .btn-row { gap: 6px; }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-height: 600px) and (orientation: landscape) {
   button { padding: 6px 12px; font-size: 11px; }
   button.sm { padding: 4px 8px; font-size: 10px; }
   .btn-row { gap: 4px; }
@@ -288,6 +309,8 @@ input, select, textarea {
   color: var(--ink);
   font-size: 14px;
   margin-bottom: 4px;
+  -webkit-appearance: none;
+  appearance: none;
 }
 input:focus, select:focus, textarea:focus {
   outline: none; border-color: var(--brand);
@@ -305,7 +328,7 @@ input:focus, select:focus, textarea:focus {
   .field-hint { font-size: 10px; }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-height: 600px) and (orientation: landscape) {
   input, select, textarea { font-size: 12px; padding: 6px 8px; margin-bottom: 2px; }
   label { font-size: 10px; margin-bottom: 2px; }
   .form-row { gap: 8px; margin-bottom: 4px; }
@@ -313,13 +336,18 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* -------------------------------- جداول ----------------------------------- */
-.table-wrap { overflow-x: auto; border-radius: var(--radius-m); border: 1px solid var(--line); -webkit-overflow-scrolling: touch; }
+.table-wrap { 
+  overflow-x: auto; 
+  border-radius: var(--radius-m); 
+  border: 1px solid var(--line); 
+  -webkit-overflow-scrolling: touch;
+}
 table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 th, td { padding: 10px 12px; text-align: center; border-bottom: 1px solid var(--line); white-space: nowrap; }
-th { background: var(--brand); color: #fff; font-weight: 700; position: sticky; top: 0; }
+th { background: var(--brand); color: #fff; font-weight: 700; position: sticky; top: 0; z-index: 5; }
 tbody tr:hover { background: var(--surface-alt); }
 td.name-cell { text-align: right; font-weight: 600; }
-.pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+.pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
 .pill.debt { background: var(--debt-soft); color: var(--debt); }
 .pill.pay { background: var(--pay-soft); color: var(--pay); }
 .pill.ok { background: var(--pay-soft); color: var(--pay); }
@@ -332,7 +360,7 @@ td.name-cell { text-align: right; font-weight: 600; }
   .pill { padding: 2px 8px; font-size: 10px; }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-height: 600px) and (orientation: landscape) {
   table { font-size: 11px; }
   th, td { padding: 6px 4px; }
   .pill { padding: 1px 6px; font-size: 9px; }
@@ -365,7 +393,7 @@ td.name-cell { text-align: right; font-weight: 600; }
   .customer-card .balance { font-size: 16px; }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-height: 600px) and (orientation: landscape) {
   .customer-card { padding: 8px; border-radius: 10px; }
   .customer-card .name { font-size: 11px; margin-bottom: 1px; }
   .customer-card .phone { font-size: 9px; margin-bottom: 4px; }
@@ -380,6 +408,7 @@ td.name-cell { text-align: right; font-weight: 600; }
   position: relative;
   padding: 26px 26px 20px;
   border: 1px dashed var(--line);
+  overflow: hidden;
 }
 .receipt::before, .receipt::after {
   content: "";
@@ -403,7 +432,7 @@ td.name-cell { text-align: right; font-weight: 600; }
 .receipt-head .cname { font-size: 19px; font-weight: 800; font-family: var(--font-display); }
 .receipt-head .cmeta { font-size: 12px; color: var(--ink-soft); margin-top: 4px; }
 .receipt-balance { text-align: center; padding: 6px 0 16px; }
-.receipt-balance .amt { font-size: 30px; font-weight: 800; font-family: var(--font-mono); }
+.receipt-balance .amt { font-size: 30px; font-weight: 800; font-family: var(--font-mono); word-break: break-word; }
 .receipt-balance .cap { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
 
 @media (max-width: 1024px) {
@@ -422,7 +451,7 @@ td.name-cell { text-align: right; font-weight: 600; }
   .receipt-balance .cap { font-size: 11px; }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-height: 600px) and (orientation: landscape) {
   .receipt { padding: 10px 12px 8px; border-radius: 12px; }
   .receipt::before, .receipt::after { display: none; }
   .receipt .stamp { display: none; }
@@ -445,7 +474,7 @@ td.name-cell { text-align: right; font-weight: 600; }
   .subtab { padding: 6px 12px; font-size: 12px; }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-height: 600px) and (orientation: landscape) {
   .subtabs { gap: 4px; margin-bottom: 8px; }
   .subtab { padding: 4px 10px; font-size: 10px; }
 }
@@ -453,7 +482,17 @@ td.name-cell { text-align: right; font-weight: 600; }
 /* -------------------------------- تنبيهات/فارغ ----------------------------- */
 .empty-state { text-align: center; padding: 46px 20px; color: var(--ink-soft); }
 .empty-state .ic { font-size: 32px; margin-bottom: 10px; }
-.alert-row { padding: 12px 14px; border-radius: var(--radius-s); margin-bottom: 8px; font-size: 13.5px; display: flex; gap: 10px; align-items: center; }
+.alert-row { 
+  padding: 12px 14px; 
+  border-radius: var(--radius-s); 
+  margin-bottom: 8px; 
+  font-size: 13.5px; 
+  display: flex; 
+  gap: 10px; 
+  align-items: center;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
 .alert-row.warn { background: var(--gold-soft); color: #6b4e17; }
 .alert-row.danger { background: var(--debt-soft); color: var(--debt); }
 [data-theme="dark"] .alert-row.warn { color: var(--gold); }
@@ -462,7 +501,7 @@ td.name-cell { text-align: right; font-weight: 600; }
   .alert-row { padding: 10px 12px; font-size: 12px; gap: 8px; }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-height: 600px) and (orientation: landscape) {
   .alert-row { padding: 6px 8px; font-size: 10px; gap: 6px; margin-bottom: 4px; }
 }
 
@@ -470,12 +509,14 @@ td.name-cell { text-align: right; font-weight: 600; }
 #toast {
   position: fixed; bottom: 20px; right: 20px; z-index: 200;
   display: flex; flex-direction: column; gap: 8px;
+  max-width: calc(100vw - 40px);
 }
 .toast-msg {
   background: var(--ink); color: var(--bg);
   padding: 11px 18px; border-radius: var(--radius-m);
   font-size: 13.5px; box-shadow: var(--shadow-lift);
   animation: slideUp .2s ease;
+  word-break: break-word;
 }
 @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -484,7 +525,7 @@ td.name-cell { text-align: right; font-weight: 600; }
   .toast-msg { padding: 10px 14px; font-size: 12px; }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-height: 600px) and (orientation: landscape) {
   #toast { bottom: 65px; right: 10px; left: 10px; }
   .toast-msg { padding: 6px 10px; font-size: 10px; }
 }
@@ -494,11 +535,16 @@ td.name-cell { text-align: right; font-weight: 600; }
   position: fixed; inset: 0; background: rgba(10,15,13,0.45);
   display: flex; align-items: center; justify-content: center; z-index: 100;
   padding: 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .modal-box {
   background: var(--surface); border-radius: var(--radius-l);
   padding: 22px; width: 100%; max-width: 420px;
   box-shadow: var(--shadow-lift);
+  max-height: 85vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .modal-box h3 { margin-top: 0; }
 
@@ -507,8 +553,9 @@ td.name-cell { text-align: right; font-weight: 600; }
   .modal-box h3 { font-size: 14px; }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
-  .modal-box { padding: 14px; max-width: 95%; border-radius: 12px; }
+@media (max-height: 600px) and (orientation: landscape) {
+  .modal-overlay { padding: 8px; }
+  .modal-box { padding: 14px; max-width: 95%; border-radius: 12px; max-height: 90vh; }
   .modal-box h3 { font-size: 12px; }
 }
 
@@ -528,7 +575,7 @@ td.name-cell { text-align: right; font-weight: 600; }
   .app-shell { grid-template-columns: 1fr; }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-height: 600px) and (orientation: landscape) {
   .mobile-tabbar { height: 50px; padding: 4px 2px; }
   .mobile-tabbar .nav-item { font-size: 8px; padding: 6px 1px; gap: 1px; }
 }
@@ -538,12 +585,13 @@ td.name-cell { text-align: right; font-weight: 600; }
   position: fixed; inset: 0; background: var(--brand); z-index: 300;
   display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
   color: #fff;
+  overflow: hidden;
 }
 .pin-dots { display: flex; gap: 12px; }
 .pin-dot { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; }
 .pin-dot.filled { background: var(--gold); border-color: var(--gold); }
 .pin-pad { display: grid; grid-template-columns: repeat(3, 64px); gap: 12px; }
-.pin-pad button { width: 64px; height: 64px; border-radius: 50%; font-size: 20px; background: rgba(255,255,255,0.12); }
+.pin-pad button { width: 64px; height: 64px; border-radius: 50%; font-size: 20px; background: rgba(255,255,255,0.12); touch-action: manipulation; }
 
 @media (max-width: 600px) {
   .pin-pad { grid-template-columns: repeat(3, 52px); gap: 10px; }
@@ -552,7 +600,7 @@ td.name-cell { text-align: right; font-weight: 600; }
   .pin-dot { width: 12px; height: 12px; }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-height: 600px) and (orientation: landscape) {
   .pin-pad { grid-template-columns: repeat(3, 40px); gap: 8px; }
   .pin-pad button { width: 40px; height: 40px; font-size: 14px; }
   .pin-dots { gap: 8px; }
@@ -580,6 +628,6 @@ td.name-cell { text-align: right; font-weight: 600; }
   .install-hint { padding: 8px 12px; font-size: 11px; }
 }
 
-@media (max-height: 500px) and (orientation: landscape) {
+@media (max-height: 600px) and (orientation: landscape) {
   .install-hint { padding: 6px 10px; font-size: 10px; margin-bottom: 8px; }
 }
