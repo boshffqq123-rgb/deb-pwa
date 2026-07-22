@@ -2,6 +2,7 @@
    db.js — طبقة قاعدة البيانات (IndexedDB)
    البنية: Customers (عملاء) + Transactions (عمليات: دين/سداد) + Settings
    يحافظ على توافق تلقائي مع بيانات النظام القديم (متجر "debts" المسطّح)
+   محدث: أضيفنا حقول monthlySalary و balance وتحديثات تلقائية للرصيد عند تسجيل/تعديل/حذف العمليات
    ========================================================================= */
 
 const DB_NAME = "DebtSystemFinal"; // نفس اسم قاعدة النظام القديم عمدًا
@@ -90,6 +91,7 @@ const Customers = {
   },
   async add(customer) {
     const store = tx(S_CUSTOMERS, "readwrite").objectStore(S_CUSTOMERS);
+    const monthlySalary = Number(customer.monthlySalary) || 0;
     const payload = {
       name: customer.name || "",
       phone: customer.phone || "",
@@ -97,6 +99,9 @@ const Customers = {
       notes: customer.notes || "",
       archived: false,
       pinned: false,
+      monthlySalary: monthlySalary, // راتب شهري (اختياري)
+      // الرصيد الافتراضي: إن أعطينا monthlySalary نضعه، وإلا 0
+      balance: Number(customer.balance ?? monthlySalary) || 0,
       createdAt: new Date().toISOString(),
     };
     const id = await reqToPromise(store.add(payload));
@@ -107,7 +112,17 @@ const Customers = {
     const store = tx(S_CUSTOMERS, "readwrite").objectStore(S_CUSTOMERS);
     const existing = await reqToPromise(store.get(id));
     if (!existing) return;
+    // إذا غيّرنا monthlySalary ونريد الحفاظ على النمط: إذا كان الرصيد يساوي الراتب القديم
+    // فنجعل الرصيد يتبع الراتب الجديد تلقائيًا، وإلا نترك الرصيد كما هو (المستخدم أدخله يدويًا سابقًا)
     const updated = { ...existing, ...patch };
+    if (patch.hasOwnProperty("monthlySalary")) {
+      const newSalary = Number(patch.monthlySalary) || 0;
+      const oldSalary = Number(existing.monthlySalary) || 0;
+      if (Number(existing.balance || 0) === oldSalary) {
+        updated.balance = newSalary;
+      }
+      updated.monthlySalary = newSalary;
+    }
     await reqToPromise(store.put(updated));
     await Audit.log("تعديل عميل", `تم تعديل بيانات: ${updated.name}`);
   },
@@ -142,8 +157,23 @@ const Transactions = {
     const result = await reqToPromise(idx.getAll(IDBKeyRange.only(customerId)));
     return result.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.id - b.id));
   },
+
+  /* دالة مساعدة داخلية: ضبط رصيد العميل داخل نفس المعاملة
+     params: cstore (objectStore for customers), customerId, delta (number to add to balance)
+  */
+  async _applyBalanceChangeInTransaction(cstore, customerId, delta) {
+    const cust = await reqToPromise(cstore.get(customerId));
+    if (!cust) return;
+    cust.balance = Number((Number(cust.balance || 0) + Number(delta || 0)).toFixed(2));
+    await reqToPromise(cust ? cstore.put(cust) : Promise.resolve());
+  },
+
   async add(t) {
-    const store = tx(S_TRANSACTIONS, "readwrite").objectStore(S_TRANSACTIONS);
+    // نستخدم معاملة على المتجرين معًا لضمان تناسق أفضل
+    const trx = tx([S_TRANSACTIONS, S_CUSTOMERS], "readwrite");
+    const tstore = trx.objectStore(S_TRANSACTIONS);
+    const cstore = trx.objectStore(S_CUSTOMERS);
+
     const payload = {
       customerId: t.customerId,
       type: t.type, // "debt" | "payment"
@@ -152,25 +182,76 @@ const Transactions = {
       note: t.note || "",
       createdAt: new Date().toISOString(),
     };
-    const id = await reqToPromise(store.add(payload));
-    const customer = await Customers.get(t.customerId);
-    await Audit.log(
-      t.type === "debt" ? "تسجيل دين" : "تسجيل سداد",
-      `${customer ? customer.name : "عميل"} — ${payload.amount.toFixed(2)}`
-    );
+    const id = await reqToPromise(tstore.add(payload));
+
+    // حدّث رصيد العميل: دين = نخصم الرصيد، سداد = نعيد الرصيد
+    const customer = await reqToPromise(cstore.get(t.customerId));
+    if (customer) {
+      if (payload.type === "debt") {
+        customer.balance = Number((Number(customer.balance || 0) - payload.amount).toFixed(2));
+      } else {
+        customer.balance = Number((Number(customer.balance || 0) + payload.amount).toFixed(2));
+      }
+      await reqToPromise(cstore.put(customer));
+      await Audit.log(payload.type === "debt" ? "تسجيل دين" : "تسجيل سداد", `${customer.name} — ${payload.amount.toFixed(2)}`);
+    } else {
+      await Audit.log(payload.type === "debt" ? "تسجيل دين" : "تسجيل سداد", `عميل #${t.customerId} — ${payload.amount.toFixed(2)}`);
+    }
+
     return id;
   },
   async update(id, patch) {
-    const store = tx(S_TRANSACTIONS, "readwrite").objectStore(S_TRANSACTIONS);
-    const existing = await reqToPromise(store.get(id));
+    // احصل على معاملتين داخل معاملة مشتركة لضمان الاتساق: عملية + عميل
+    const trx = tx([S_TRANSACTIONS, S_CUSTOMERS], "readwrite");
+    const tstore = trx.objectStore(S_TRANSACTIONS);
+    const cstore = trx.objectStore(S_CUSTOMERS);
+
+    const existing = await reqToPromise(tstore.get(id));
     if (!existing) return;
-    const updated = { ...existing, ...patch, amount: Number(patch.amount ?? existing.amount) };
-    await reqToPromise(store.put(updated));
+    const updated = { ...existing, ...patch };
+    updated.amount = Number(patch.amount ?? existing.amount);
+
+    // حساب التغيير في الرصيد (delta) الذي يجب تطبيقه على رصيد العميل
+    const delta = (() => {
+      // نرجع القيمة التي يجب إضافتها إلى رصيد العميل (موجبة أو سالبة)
+      // حالة نفس النوع:
+      //  - type === 'debt' => الرصيد انخفض سابقًا بمقدار existing.amount، والآن يجب أن ينخفض بمقدار updated.amount
+      //    لذلك الفرق الذي يجب اضافته للرصد هو existing.amount - updated.amount
+      //  - type === 'payment' => الرصيد زاد سابقًا بمقدار existing.amount، والآن يجب أن يزيد بمقدار updated.amount
+      //    الفرق: updated.amount - existing.amount
+      // حالة تغيّر النوع: نلغي أثر القديم ونطبّق أثر الجديد
+      if (existing.type === updated.type) {
+        if (updated.type === "debt") return Number(existing.amount) - Number(updated.amount);
+        else return Number(updated.amount) - Number(existing.amount);
+      } else {
+        // نلغي أثر القديم ثم نطبّق الجديد
+        const undoOld = existing.type === "debt" ? Number(existing.amount) : -Number(existing.amount);
+        const applyNew = updated.type === "debt" ? -Number(updated.amount) : Number(updated.amount);
+        return undoOld + applyNew;
+      }
+    })();
+
+    // حفظ التغييرات في العملية
+    await reqToPromise(tstore.put(updated));
+
+    // تطبيق التغيير على رصيد العميل
+    await this._applyBalanceChangeInTransaction(cstore, existing.customerId, delta);
+
     await Audit.log("تعديل عملية", `#${id}`);
   },
   async remove(id) {
-    const store = tx(S_TRANSACTIONS, "readwrite").objectStore(S_TRANSACTIONS);
-    await reqToPromise(store.delete(id));
+    // نحتاج لإلغاء أثر العملية على رصيد العميل داخل معاملة
+    const trx = tx([S_TRANSACTIONS, S_CUSTOMERS], "readwrite");
+    const tstore = trx.objectStore(S_TRANSACTIONS);
+    const cstore = trx.objectStore(S_CUSTOMERS);
+
+    const existing = await reqToPromise(tstore.get(id));
+    if (!existing) return;
+
+    // عند الحذف: نُعيد التأثير المعاكس على رصيد العميل
+    const reverse = existing.type === "debt" ? Number(existing.amount) : -Number(existing.amount);
+    await reqToPromise(tstore.delete(id));
+    await this._applyBalanceChangeInTransaction(cstore, existing.customerId, reverse);
     await Audit.log("حذف عملية", `#${id}`);
   },
   balanceFor(transactions) {
@@ -330,6 +411,9 @@ async function migrateFromLegacyIfNeeded() {
       customerId = await reqToPromise(cstore.add({
         name, phone: "", address: "", notes: "",
         archived: false, pinned: false,
+        // نضيف الحقول الجديدة بحدود افتراضية
+        monthlySalary: 0,
+        balance: 0,
         createdAt: row.date ? new Date(row.date).toISOString() : new Date().toISOString(),
       }));
       nameToCustomerId.set(name, customerId);
@@ -351,6 +435,8 @@ async function migrateFromLegacyIfNeeded() {
       }));
     }
   }
+
+  // ملاحظة: بعد إدخال العمليات القديمة قد نحتاج لتحديث أرصدة العملاء: سنترك ذلك للمستخدم أو يمكن تنفيذ حساب أولي لاحقًا
 
   await Settings.set("migrated_from_legacy", true);
   await Audit.log("ترحيل بيانات", `تم ترحيل ${oldRows.length} سجل قديم إلى ${nameToCustomerId.size} عميل`);
