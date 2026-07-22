@@ -71,6 +71,8 @@ function customerModal(existing) {
     <label>الهاتف</label><input id="cmPhone" value="${escapeHtml(existing?.phone || "")}">
     <label>العنوان</label><input id="cmAddress" value="${escapeHtml(existing?.address || "")}">
     <label>ملاحظات</label><textarea id="cmNotes" rows="2">${escapeHtml(existing?.notes || "")}</textarea>
+    <label>الراتب الشهري (اختياري)</label><input id="cmMonthly" type="number" step="0.01" value="${existing?.monthlySalary ?? ""}">
+    <label>الرصيد المتاح (اختياري — افتراضي = الراتب)</label><input id="cmBalance" type="number" step="0.01" value="${existing?.balance ?? (existing?.monthlySalary ?? "")}">
     <div class="btn-row" style="justify-content:flex-end;margin-top:8px;">
       <button class="secondary" id="cmCancel">إلغاء</button>
       <button id="cmSave">💾 حفظ</button>
@@ -80,11 +82,17 @@ function customerModal(existing) {
   $("#cmSave", box).onclick = async () => {
     const name = $("#cmName", box).value.trim();
     if (!name) { toast("الاسم مطلوب"); return; }
+    const monthlySalary = parseFloat($("#cmMonthly", box).value) || 0;
+    const balanceVal = $("#cmBalance", box).value;
+    // إذا أعطى المستخدم قيمة صريحة للرصيد نستخدمها وإلا نستخدم monthlySalary
+    const balance = (balanceVal !== "") ? (parseFloat(balanceVal) || 0) : monthlySalary;
     const payload = {
       name,
       phone: $("#cmPhone", box).value.trim(),
       address: $("#cmAddress", box).value.trim(),
       notes: $("#cmNotes", box).value.trim(),
+      monthlySalary,
+      balance,
     };
     let newId;
     if (existing) await Customers.update(existing.id, payload);
@@ -280,7 +288,8 @@ async function renderCustomers() {
       ${customer.pinned ? '<div class="pin-badge">📌</div>' : ""}
       <div class="name">${escapeHtml(customer.name)}</div>
       <div class="phone">📞 ${escapeHtml(customer.phone || "بدون رقم هاتف")}</div>
-      <div class="balance">${fmtMoney(Math.abs(remaining))}</div>
+      <div class="balance">رصيد ديون: ${fmtMoney(Math.abs(remaining))}</div>
+      <div class="field-hint" style="margin-top:8px;">رصيد الموظف المتاح: ${fmtMoney(customer.balance ?? 0)}</div>
       <div><span class="pill ${pillClass}">${label}</span></div>
     </div>`;
   }).join("") : `<div class="empty-state"><div class="ic">👤</div>لا يوجد عملاء ${state.showArchived ? "مؤرشفون" : ""} — أضف عميلًا جديدًا للبدء</div>`;
@@ -320,9 +329,18 @@ async function renderStatement(customerId) {
       ${customer.notes ? `<div class="cmeta">📝 ${escapeHtml(customer.notes)}</div>` : ""}
     </div>
     <div class="receipt-balance">
-      <div class="field-hint" style="text-align:center;">الرصيد</div>
-      <div class="amt" style="color:${remaining > 0 ? "var(--debt)" : remaining < 0 ? "var(--pay)" : "var(--ink)"}">${fmtMoney(Math.abs(remaining))}</div>
-      <div class="cap"><span class="pill ${remaining > 0 ? "danger" : remaining < 0 ? "ok" : "warn"}">${statusText}</span></div>
+      <div style="display:flex;justify-content:space-around;gap:12px;flex-wrap:wrap;">
+        <div style="text-align:center;">
+          <div class="field-hint">الرصيد المتبقي (دين - سداد)</div>
+          <div class="amt" style="color:${remaining > 0 ? "var(--debt)" : remaining < 0 ? "var(--pay)" : "var(--ink)"}">${fmtMoney(Math.abs(remaining))}</div>
+          <div class="cap"><span class="pill ${remaining > 0 ? "danger" : remaining < 0 ? "ok" : "warn"}">${statusText}</span></div>
+        </div>
+        <div style="text-align:center;">
+          <div class="field-hint">الرصيد المتاح للموظف</div>
+          <div class="amt" style="color:var(--brand);font-size:18px;">${fmtMoney(customer.balance ?? 0)}</div>
+          <div class="cap">الراتب الشهري: ${fmtMoney(customer.monthlySalary ?? 0)}</div>
+        </div>
+      </div>
     </div>
     <div class="grid cols-2" style="text-align:center;">
       <div><div class="field-hint">إجمالي الدين</div><b style="color:var(--debt)">${fmtMoney(debt)}</b></div>
