@@ -187,11 +187,17 @@ function setupNav() {
   $all(".nav-item").forEach((item) => {
     item.onclick = () => navigate(item.dataset.view);
   });
-  // شريط جوال يعكس نفس عناصر الشريط الجانبي
+  // شريط جوال يعكس نفس عناصر الشريط الجانبي (تم توسيعه ليشمل التنبيهات والنسخ والاعدادات)
   const mobileBar = $("#mobileTabbar");
-  const items = ["dashboard", "customers", "newTransaction", "search", "reports"];
-  const icons = { dashboard: "📊", customers: "👥", newTransaction: "➕", search: "🔍", reports: "📅" };
-  const labels = { dashboard: "الرئيسية", customers: "العملاء", newTransaction: "عملية", search: "بحث", reports: "تقارير" };
+  const items = ["dashboard","customers","newTransaction","search","reports","alerts","backup","settings"];
+  const icons = {
+    dashboard: "📊", customers: "👥", newTransaction: "➕",
+    search: "🔍", reports: "📅", alerts: "🔔", backup: "💾", settings: "⚙️"
+  };
+  const labels = {
+    dashboard: "الرئيسية", customers: "العملاء", newTransaction: "عملية",
+    search: "بحث", reports: "تقارير", alerts: "التنبيهات", backup: "النسخ", settings: "الإعدادات"
+  };
   mobileBar.innerHTML = items.map((v) => `<div class="nav-item" data-view="${v}"><span class="ic">${icons[v]}</span>${labels[v]}</div>`).join("");
   $all(".nav-item", mobileBar).forEach((item) => { item.onclick = () => navigate(item.dataset.view); });
 }
